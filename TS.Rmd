@@ -1,0 +1,132 @@
+---
+title: "TS"
+author: "Subodh"
+date: "5/28/2021"
+output: html_document
+---
+
+```{r}
+setwd("~/Desktop/Advance Modeling/Time Series1")
+library(forecast)
+library(tidyverse)
+df <- read.csv("hotelSalesData.csv")
+library(lubridate)
+
+```
+
+**1.  First, let's begin by reading in the dataset and turning it into a timeseries with the ts() function. Plot the time series and describe it. What features looks most interesting? **
+
+```{r}
+df.ts <- ts(df[,3], start = 2004, frequency = 12)
+df.ts
+plot(df.ts, xlab="Year", ylab="Sales", main="Time Series")
+
+
+df %>% 
+  mutate(date = str_c(Month,Year,"1" ,sep = "-")) %>% 
+  mutate(Date = myd(date)) %>% 
+  mutate(Month = month(Date, label = TRUE)) %>% 
+  ggplot(aes(Month,sales,group=Year, color=Year))+
+  geom_line()+
+  geom_point()
+
+  
+  
+```
+
+While examining the plot first observation one can make is it's very strong positive linear relationsip and the data is seasonal to the series.
+
+
+
+**2.  Make a season plot and decomposition plot. What do you notice?**
+
+```{r}
+df.decompose <- decompose(df.ts)
+head(df.decompose)
+plot(df.decompose)
+seasonplot(df.ts)
+hist(df.decompose$random, breaks = 20, probability = T)
+
+```
+From the seasonal plot we can confirm the presense of seasonal factor as earlier mentioned
+ and the trend of the cycle remains constant throuht out the years with the continous rise in the level.
+
+
+**3.  First let's try using a Holt-Winters smoothing procedure with the HoltWinters() function. Plot the residuals and make a histogram of them. Describe the residuals. **
+
+```{r}
+data.holt <- HoltWinters(df.ts, seasonal = "additive")
+plot(data.holt)
+head(data.holt)
+```
+
+```{r}
+data.holt$SSE
+residual.data <- data.holt$fitted[,1] - df.ts
+hist(residual.data, breaks = 20)
+
+hist(residual.data, breaks = 20, probability = T)
+lines(density(residual.data, adjust = 2), lty="dotted")
+```
+ Out plot suggests that most of our error/residual i.e. difference between actual and forecasted data point are centered around zero and SSE is also low.
+ 
+**4.  Next, we will perform a Linear Regression on the timeseries with with the lm() function like normal. Plot the residuals of the model and make a histogram of the residuals of the model. What do you notice?**
+
+```{r}
+linear.model <- lm(df.ts~time(df.ts))
+summary(linear.model)
+plot(df.ts)
+abline(linear.model$coefficients[1], b=linear.model$coefficients[2])
+hist(linear.model$residuals, breaks = 25)
+
+
+
+```
+From this plot, I see that the error are widely spread as frequencies are higher around -10 and 10 and does not seems to be normally distributed.
+
+**5.  Let's try using dummy variables for the months and try the lm() function again. Again, plot the residuals and make a histogram of them. Did the model improve at all?**
+
+```{r}
+dummy.LM <- lm(df.ts~time(df.ts)+seasonaldummy(df.ts))
+summary(dummy.LM)
+sum(dummy.LM$residuals^2)
+plot(df.ts)
+pred.ts<- ts(dummy.LM$fitted.values, start = 2004, frequency = 12)
+points(pred.ts, col="red", pch=4)
+hist(dummy.LM$residuals, breaks = 25)
+```
+Yes, thers is an improvement to the model while using linear model with dummy seasonal variables because of the distubution of model centered around zero.
+
+**6.  Lastly, let's use the tslm() function from the forecast package. Again, plot the residuals and make a histogram of them. Did the model improve at all?**
+```{r}
+LM.tslm <- tslm(df.ts ~ trend + season)
+summary(LM.tslm)
+hist(LM.tslm$residuals, breaks = 25)
+plot(forecast(LM.tslm, h=20))
+```
+ 
+ In comparing to the linear model with dummy variable, the model did not change at all.
+ 
+
+**7.  We have now performed four different analyses: (1) Holt Winter's Smoothing, (2) Ordinary Least Squares Regression, (3) Ordinary Least Squares Regression with Seasonal Dummy Variables, and (4) Regression with a Trend and Seasonal component. Which model is best? Why do you think so?**
+
+
+Among all analysis we performed, in my poinion Holt Winter's model is the best model due to the following reasons:
+1. The residual/errors are concentrated around zero and slightly flat in the left but with very low frequency.
+
+2. When we plot the timeseries using Holt Winter's procedure, even just by looking at the plot, we can tell the forecast fits very well with the actual observations in all the periods and have very less errors.
+
+3. SSE is low.
+
+
+
+**8.  With your choice of best model, make a prediction of the next 24 months of revenue.**
+
+```{r}
+#Holt Winter's model
+holt.predict <- predict(data.holt, n.ahead = 2 * 12)
+holt.predict
+ts.plot(df.ts, holt.predict, lty=7:9)
+
+```
+
