@@ -6,7 +6,7 @@ Monthly trend in then compared on yearly basis which gives us clearer view on th
 
 ![Screen Shot 2021-06-02 at 4 59 19 PM](https://user-images.githubusercontent.com/67131400/120566815-b1995b00-c3d5-11eb-8f92-c2c15952951a.png)
 
-The data is then decomposed and plotted in histogram to check the residual value which shows that the majority of the errors are centered around zero
+The data is then decomposed and plotted in histogram to check the residual value which shows that the majority of the errors are centered around zero.
 
 ![Screen Shot 2021-06-02 at 4 59 40 PM](https://user-images.githubusercontent.com/67131400/120566829-bb22c300-c3d5-11eb-9dae-2423207de20d.png)
 
